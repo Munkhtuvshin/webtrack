@@ -57,15 +57,15 @@ def main():
     s.close()
 #************** END MAIN PROGRAM ***************
 
-# def printout(type,request,address):
-#     if "Block" in type or "Blacklist" in type:
-#         colornum = 91
-#     elif "Request" in type:
-#         colornum = 92
-#     elif "Reset" in type:
-#         colornum = 93
+def printout(type,request,address):
+    if "Block" in type or "Blacklist" in type:
+        colornum = 91
+    elif "Request" in type:
+        colornum = 92
+    elif "Reset" in type:
+        colornum = 93
 
-#     print "\033[",colornum,"m",address[0],"\t",type,"\t",request,"\033[0m"
+    print "\033[",colornum,"m",address[0],"\t",type,"\t",request,"\033[0m"
 
 #*******************************************
 #********* PROXY_THREAD FUNC ***************
@@ -75,84 +75,70 @@ def proxy_thread(conn, client_addr):
 
     # get the request from browser
     request = conn.recv(MAX_DATA_RECV)
-    print(request)
+
     # parse the first line
-    # first_line = request.split('\n')[0]
+    first_line = request.split('\n')[0]
 
     # get url
-    # url = first_line.split(' ')[1]
+    url = first_line.split(' ')[1]
 
-    # for i in range(0,len(BLOCKED)):
-    #     if BLOCKED[i] in url:
-    #         printout("Blacklisted",first_line,client_addr)
-    #         conn.close()
-    #         sys.exit(1)
+    for i in range(0,len(BLOCKED)):
+        if BLOCKED[i] in url:
+            printout("Blacklisted",first_line,client_addr)
+            conn.close()
+            sys.exit(1)
 
 
-    # printout("Request",first_line,client_addr)
-
+    printout("Request",first_line,client_addr)
     # print "URL:",url
     # print
     
     # find the webserver and port
-    # http_pos = url.find("://")          # find pos of ://
-    # if (http_pos==-1):
-    #     temp = url
-    # else:
-    #     temp = url[(http_pos+3):]       # get the rest of url
+    http_pos = url.find("://")          # find pos of ://
+    if (http_pos==-1):
+        temp = url
+    else:
+        temp = url[(http_pos+3):]       # get the rest of url
     
-    # port_pos = temp.find(":")           # find the port pos (if any)
+    port_pos = temp.find(":")           # find the port pos (if any)
 
-    # # find end of web server
-    # webserver_pos = temp.find("/")
-    # if webserver_pos == -1:
-    #     webserver_pos = len(temp)
+    # find end of web server
+    webserver_pos = temp.find("/")
+    if webserver_pos == -1:
+        webserver_pos = len(temp)
 
-    # webserver = ""
-    # port = -1
-    # if (port_pos==-1 or webserver_pos < port_pos):      # default port
-    #     port = 80
-    #     webserver = temp[:webserver_pos]
-    # else:       # specific port
-    #     port = int((temp[(port_pos+1):])[:webserver_pos-port_pos-1])
-    #     webserver = temp[:port_pos]
+    webserver = ""
+    port = -1
+    if (port_pos==-1 or webserver_pos < port_pos):      # default port
+        port = 80
+        webserver = temp[:webserver_pos]
+    else:       # specific port
+        port = int((temp[(port_pos+1):])[:webserver_pos-port_pos-1])
+        webserver = temp[:port_pos]
 
     try:
         # create a socket to connect to the web server
-        # s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  
-        # s.connect((webserver, port))
-        # s.send(request)         # send request to webserver
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  
+        s.connect((webserver, port))
+        s.send(request)         # send request to webserver
         
-        # while 1:
-        #     # receive data from web server
-        #     data = s.recv(MAX_DATA_RECV)
+        while 1:
+            # receive data from web server
+            data = s.recv(MAX_DATA_RECV)
             
-        #     if (len(data) > 0):
-        #         # send to browser
-        #         conn.send(data)
-        #     else:
-        #         break
-        # s.close()
-        conn.send(b"""<!DOCTYPE html>
-                        <html>
-                        <head>
-                        <meta charset="UTF-8">
-                        <link rel="icon" href="data:;base64,iVBORw0KGgo=">
-                        <title>Title of the document</title>
-                        </head>
-
-                        <body>
-                        http proxy server 
-                        </body>
-
-                        </html>""")
+            if (len(data) > 0):
+                # send to browser
+                conn.send(data)
+            else:
+                break
+        s.close()
         conn.close()
     except socket.error, (value, message):
-        # if s:
-        #     s.close()
+        if s:
+            s.close()
         if conn:
             conn.close()
-        # printout("Peer Reset",first_line,client_addr)
+        printout("Peer Reset",first_line,client_addr)
         sys.exit(1)
 #********** END PROXY_THREAD ***********
     
